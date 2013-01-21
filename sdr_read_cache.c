@@ -44,48 +44,63 @@ length from record type
 #define SDR_RECORD_TYPE_OEM                     0xc0
 
 struct sdr_get_rs {
-        uint16_t id;            /* record id */
-        uint8_t version;        /* SDR version (51h) */
-       	uint8_t type;           /* record type */
-        uint8_t length;         /* remaining record bytes */
-        uint8_t raw;            /* raw */
+        uint16_t id;             /* Record id */
+        uint8_t  version;        /* SDR version (51h) */
+       	uint8_t  type;           /* Record type */
+        uint8_t  length;         /* Remaining record bytes */
+        uint8_t  r1;             /* Sensor Ownser ID */
+        uint8_t  r2;             /* Sensor Owner LUN */
+	uint8_t  sensor_id;      /* Sensor ID */
 };
 
 
 int main(int argc, char *argv[])
 {
         FILE *ptr_myfile;
-        struct sdr_get_rs sdr_rs; 
+        struct sdr_get_rs sdr_rs;
         long cur;
         char name[16];
 
-        ptr_myfile = fopen("r1i1c.sdrcache"/*service0.sdrcache"*/,"rb");
+	if (argc != 2) {
+        	printf("Usage: %s <sdr-cache-file>\n", argv[0]);
+                exit(EXIT_FAILURE);
+        }
+
+        ptr_myfile = fopen(argv[1],"rb");
         if (!ptr_myfile) {
                 printf("Unable to open file!");
-                return 1;
+                exit(EXIT_FAILURE);
         }
 
         while (fread(&sdr_rs, sizeof(struct sdr_get_rs), 1, ptr_myfile)){
-                cur = ftell(ptr_myfile);
-                fseek(ptr_myfile, (cur - 1) + (sdr_rs.length - 16), SEEK_SET);
-                fread(&name, 16, 1,ptr_myfile);
+                /*
+		 * Read puts us 3 bytes past offset of length.
+		 * Length is remaining bytes from that offset,
+		 * so we subract 3.
+		 */
+		cur = (ftell(ptr_myfile) - 3);
 
-                printf("ID 0x%x Ver 0x%x, Type 0x%x, Raw 0x%x, Length 0x%x Name %s\n",
+		/* Names is the last 16 bytes, position us there. */
+                fseek(ptr_myfile, cur + (sdr_rs.length - 16), SEEK_SET);
+
+		/* Read in name. */
+                fread(&name, 16, 1, ptr_myfile);
+
+                printf("ID 0x%x Ver 0x%x, Type 0x%x, SensorID 0x%x, Length 0x%x Name %s\n",
                     	sdr_rs.id,
 			sdr_rs.version,
                     	sdr_rs.type,
-			sdr_rs.raw,
+			sdr_rs.sensor_id,
 			sdr_rs.length,
 			name);
-
-                fseek(ptr_myfile, (cur - 1) + sdr_rs.length, SEEK_SET);
+		/* printf(" r1 0x%x r2 0x%x \n",sdr_rs.r1,sdr_rs.r2); */
+		/* Put us at the beginning of the next record */
+                fseek(ptr_myfile, cur + sdr_rs.length, SEEK_SET);
 
                 if (feof(ptr_myfile)){
                     goto done;
                 }
         }
-
-
 done:
 	fclose(ptr_myfile);
 	return 0;
