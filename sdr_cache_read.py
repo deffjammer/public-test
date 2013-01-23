@@ -28,6 +28,10 @@ REC_LEN_OFFSET = 5
 LENGTH_MASK    = 0x0f
 
 import sys
+import cPickle as pickle
+import pprint
+
+sensor_table = []
 
 f = open("r1i1c.sdrcache", "rb")
 while True:
@@ -58,11 +62,26 @@ while True:
         name = f.read(name_len)
         f.seek(pos + (length + REC_LEN_OFFSET))
 
-        print 'ID 0x%02x, Ver 0x%02x, Type 0x%02x, Length 0x%02x, Name Code 0x%02x, Name %s' \
-            % (id1, version, sensor_type, length, name_code, name)
+        #print 'ID 0x%02x, Ver 0x%02x, Type 0x%02x, Length 0x%02x, Name Code 0x%02x, Name %s' \
+        #    % (id1, version, sensor_type, length, name_code, name)
+
+        sensor_table.append([id1, sensor_type, name])
 
     except:
         break
 f.close()
 
+print 'ID\tSensor Type\tName'
+pp = pprint.PrettyPrinter(indent=2)
+
+pf = open('entry.pickle', 'wb')
+pickle.dump(sensor_table, pf)
+pf.close
+
+pf = open('entry.pickle', "rb")
+data = pickle.load(pf)
+
+pp.pprint(data)
+
+pf.close()
 sys.exit(0)
