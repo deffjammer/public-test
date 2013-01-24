@@ -31,8 +31,30 @@ import sys
 import cPickle as pickle
 import pprint
 
-sensor_table = []
 
+class Record:
+
+    RecordCount = 0
+
+    def __init__(self, id, sensor_type, name):
+        self.id   = id
+        self.sensor_type = sensor_type
+        self.name = name
+        Record.RecordCount += 1
+
+    def displayCount(self):
+        print "Total Employee %d" % Record.RecordCount
+
+    def displayRecord(self):
+        print "ID : ", self.ID, "Type : ", self.sensor_type,  ", Name: ", self.name
+
+
+# list
+sensor_list = []
+# dict
+sensor_dict = {}
+
+#f = open("service0.sdrcache", "rb")
 f = open("r1i1c.sdrcache", "rb")
 while True:
     try:
@@ -64,24 +86,39 @@ while True:
 
         #print 'ID 0x%02x, Ver 0x%02x, Type 0x%02x, Length 0x%02x, Name Code 0x%02x, Name %s' \
         #    % (id1, version, sensor_type, length, name_code, name)
-
-        sensor_table.append([id1, sensor_type, name])
+        sensor_dict['0x%02x' % id1] = name
+        sensor_list.append([id1, sensor_type, name])
 
     except:
         break
 f.close()
 
+print '###### Printed as Stored List #####'
 print 'ID\tSensor Type\tName'
 pp = pprint.PrettyPrinter(indent=2)
+pp.pprint(sensor_list)
 
-pf = open('entry.pickle', 'wb')
-pickle.dump(sensor_table, pf)
+# Dump pickle object
+pf = open('sensor.pickle', 'wb')
+pickle.dump(sensor_dict, pf)
 pf.close
 
-pf = open('entry.pickle', "rb")
-data = pickle.load(pf)
-
-pp.pprint(data)
-
+# Load and print pickle object
+print '###### Printed as Stored Pickle List #####'
+pf = open('sensor.pickle', "rb")
+sensor_data = pickle.load(pf)
+pp.pprint(sensor_data)
 pf.close()
+
+# Iterate through dict and print keys and values
+print '####### Printed with ID as Index ######'
+for k in sorted(sensor_dict.keys()):
+    print '%s\t%s' % (k, sensor_dict[k])
+
+# Print pickle loaded data
+print '####### Loaded pickle object (dict ######'
+for k in sorted(sensor_data.keys()):
+    print '%s\t%s' % (k, sensor_data[k])
+
+
 sys.exit(0)
