@@ -56,6 +56,8 @@ sensor_dict = {}
 
 #f = open("service0.sdrcache", "rb")
 f = open("r1i1c.sdrcache", "rb")
+hostname = 'r1i1c'
+SSN      = 0x45ff
 while True:
     try:
         pos         = f.tell()
@@ -64,6 +66,9 @@ while True:
         version     = ord(f.read(1))
         sensor_type = ord(f.read(1))
         length      = ord(f.read(1))
+        r1          = ord(f.read(1))
+        r2          = ord(f.read(1))
+        sensor_id   = ord(f.read(1))
 
         if sensor_type == SDR_RECORD_TYPE_FULL_SENSOR:
             f.seek(pos + SDR_FULL_SENSOR_LENGTH_OFFSET)
@@ -76,7 +81,7 @@ while True:
 
         else:
             print 'Type not wanted 0x%02x' % sensor_type
-            f.seek(f.tell() + length)
+            f.seek(pos + (length + REC_LEN_OFFSET))
             continue
 
         name_code = ord(f.read(1))
@@ -84,19 +89,17 @@ while True:
         name = f.read(name_len)
         f.seek(pos + (length + REC_LEN_OFFSET))
 
-        #print 'ID 0x%02x, Ver 0x%02x, Type 0x%02x, Length 0x%02x, Name Code 0x%02x, Name %s' \
-        #    % (id1, version, sensor_type, length, name_code, name)
-        sensor_dict['0x%02x' % id1] = name
-        sensor_list.append([id1, sensor_type, name])
+        #print 'ID 0x%02x, Type 0x%02x, Length 0x%02x, Sensor ID 0x%02x Name Code 0x%02x, Name %s' \
+        #    % (id1, sensor_type, length, sensor_id, name_code, name)
+        sensor_dict['%s-%02x-%04x' % (hostname, sensor_id, SSN)] = name
 
     except:
         break
 f.close()
 
-print '###### Printed as Stored List #####'
-print 'ID\tSensor Type\tName'
+#print '###### Printed as Stored List #####'
+#print 'ID\tSensor Type\tName'
 pp = pprint.PrettyPrinter(indent=2)
-pp.pprint(sensor_list)
 
 # Dump pickle object
 pf = open('sensor.pickle', 'wb')
@@ -104,16 +107,16 @@ pickle.dump(sensor_dict, pf)
 pf.close
 
 # Load and print pickle object
-print '###### Printed as Stored Pickle List #####'
+#print '###### Printed as Stored Pickle List #####'
 pf = open('sensor.pickle', "rb")
 sensor_data = pickle.load(pf)
-pp.pprint(sensor_data)
+#pp.pprint(sensor_data)
 pf.close()
 
 # Iterate through dict and print keys and values
-print '####### Printed with ID as Index ######'
-for k in sorted(sensor_dict.keys()):
-    print '%s\t%s' % (k, sensor_dict[k])
+#print '####### Printed with ID as Index ######'
+#for k in sorted(sensor_dict.keys()):
+#    print '%s\t%s' % (k, sensor_dict[k])
 
 # Print pickle loaded data
 print '####### Loaded pickle object (dict ######'
